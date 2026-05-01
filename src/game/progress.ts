@@ -9,32 +9,61 @@ export const defaultProgress: ProgressState = {
   bestResults: {},
 }
 
-const normalizeProgress = (value: Partial<ProgressState>): ProgressState => ({
-  highestUnlockedLevel:
-    typeof value.highestUnlockedLevel === 'number' && value.highestUnlockedLevel >= 1
-      ? value.highestUnlockedLevel
-      : defaultProgress.highestUnlockedLevel,
-  selectedLevel:
-    typeof value.selectedLevel === 'number' && value.selectedLevel >= 1
-      ? value.selectedLevel
-      : defaultProgress.selectedLevel,
-  soundEnabled:
-    typeof value.soundEnabled === 'boolean' ? value.soundEnabled : defaultProgress.soundEnabled,
-  bestResults:
-    value.bestResults && typeof value.bestResults === 'object'
-      ? value.bestResults
-      : defaultProgress.bestResults,
+export const createDefaultProgress = (): ProgressState => ({
+  ...defaultProgress,
+  bestResults: {},
 })
+
+const isFiniteNonNegativeNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0
+
+const normalizeBestResults = (value: unknown): Record<number, BestResult> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).flatMap(([key, result]) => {
+      const levelId = Number(key)
+      if (!Number.isInteger(levelId) || levelId < 1 || !result || typeof result !== 'object') {
+        return []
+      }
+
+      const { moves, seconds } = result as Partial<BestResult>
+      return isFiniteNonNegativeNumber(moves) && isFiniteNonNegativeNumber(seconds)
+        ? [[levelId, { moves, seconds }]]
+        : []
+    }),
+  )
+}
+
+const normalizeProgress = (value: Partial<ProgressState>): ProgressState => {
+  const fallback = createDefaultProgress()
+
+  return {
+    highestUnlockedLevel:
+      typeof value.highestUnlockedLevel === 'number' && value.highestUnlockedLevel >= 1
+        ? value.highestUnlockedLevel
+        : fallback.highestUnlockedLevel,
+    selectedLevel:
+      typeof value.selectedLevel === 'number' && value.selectedLevel >= 1
+        ? value.selectedLevel
+        : fallback.selectedLevel,
+    soundEnabled:
+      typeof value.soundEnabled === 'boolean' ? value.soundEnabled : fallback.soundEnabled,
+    bestResults: normalizeBestResults(value.bestResults),
+  }
+}
 
 export const loadProgress = (): ProgressState => {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) {
-      return defaultProgress
+      return createDefaultProgress()
     }
     return normalizeProgress(JSON.parse(raw) as Partial<ProgressState>)
   } catch {
-    return defaultProgress
+    return createDefaultProgress()
   }
 }
 
