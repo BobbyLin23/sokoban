@@ -124,8 +124,12 @@ export function isWon(game: GameState): boolean {
   return isWonByCrates(game.level, game.crates)
 }
 
-export function getTile(level: ParsedLevel, point: Point): Tile | undefined {
-  return level.tiles[point.row]?.[point.col]
+export function getTile(level: ParsedLevel, point: Point): Tile {
+  if (point.row < 0 || point.row >= level.rows || point.col < 0 || point.col >= level.cols) {
+    return 'wall'
+  }
+
+  return level.tiles[point.row][point.col]
 }
 
 export function hasCrate(game: GameState, point: Point): boolean {

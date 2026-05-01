@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   createGame,
+  getTile,
   movePlayer,
   parseLevel,
   restartGame,
@@ -37,6 +38,15 @@ describe('gameEngine', () => {
     expect(blocked.player).toEqual({ row: 1, col: 1 })
     expect(blocked.moves).toBe(0)
     expect(blocked.history).toHaveLength(0)
+  })
+
+  it('treats out-of-bounds coordinates as walls', () => {
+    const level = parseLevel(makeLevel(['#####', '#@$.#', '#####']))
+
+    expect(getTile(level, { row: -1, col: 1 })).toBe('wall')
+    expect(getTile(level, { row: 1, col: -1 })).toBe('wall')
+    expect(getTile(level, { row: 3, col: 1 })).toBe('wall')
+    expect(getTile(level, { row: 1, col: 5 })).toBe('wall')
   })
 
   it('pushes a crate into empty floor', () => {
