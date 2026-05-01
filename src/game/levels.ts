@@ -2,8 +2,8 @@ import type { LevelDefinition } from './types'
 
 export const LEVELS: LevelDefinition[] = [
   { id: 1, title: 'First Push', map: ['#####', '#@$.#', '#####'] },
-  { id: 2, title: 'Corner Lesson', map: ['######', '#.   #', '# $$@#', '#    #', '######'] },
-  { id: 3, title: 'Double Dock', map: ['#######', '#.@   #', '# $$  #', '# ..  #', '#######'] },
+  { id: 2, title: 'Corner Lesson', map: ['######', '#..  #', '# $$@#', '#    #', '######'] },
+  { id: 3, title: 'Double Dock', map: ['#######', '# @   #', '# $$  #', '# ..  #', '#######'] },
   { id: 4, title: 'Side Step', map: ['########', '#  .   #', '#  $   #', '# @$   #', '#  .   #', '########'] },
   { id: 5, title: 'Tight Aisle', map: ['########', '# .  . #', '# $$   #', '#  @   #', '########'] },
   { id: 6, title: 'Warehouse Turn', map: ['########', '#@     #', '# $$#  #', '# ..#  #', '#      #', '########'] },
