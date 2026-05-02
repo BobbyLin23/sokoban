@@ -1,121 +1,228 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { Board } from './components/Board'
+import { Controls } from './components/Controls'
+import { Hud } from './components/Hud'
+import { LevelSelect } from './components/LevelSelect'
+import { WinDialog } from './components/WinDialog'
+import {
+  createGame,
+  movePlayer,
+  parseLevel,
+  restartGame,
+  undoMove,
+} from './game/gameEngine'
+import { LEVELS } from './game/levels'
+import {
+  loadProgress,
+  saveProgress,
+  withCompletedLevel,
+} from './game/progress'
+import type { Direction, GameState, ProgressState } from './game/types'
 import './App.css'
 
+const KEY_TO_DIRECTION: Record<string, Direction> = {
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+  w: 'up',
+  W: 'up',
+  a: 'left',
+  A: 'left',
+  s: 'down',
+  S: 'down',
+  d: 'right',
+  D: 'right',
+}
+
+const findLevelIndex = (levelId: number) => {
+  const index = LEVELS.findIndex((level) => level.id === levelId)
+  return index === -1 ? 0 : index
+}
+
+const PARSED_LEVELS = LEVELS.map(parseLevel)
+
+const getInitialProgress = (): ProgressState => {
+  const saved = loadProgress()
+  const highestUnlockedLevel = Math.min(
+    LEVELS.length,
+    Math.max(1, saved.highestUnlockedLevel),
+  )
+  const selectedLevel = LEVELS.some((level) => level.id === saved.selectedLevel)
+    && saved.selectedLevel <= highestUnlockedLevel
+    ? saved.selectedLevel
+    : LEVELS[0].id
+
+  return {
+    ...saved,
+    selectedLevel,
+    highestUnlockedLevel,
+  }
+}
+
+const createGameForLevel = (levelId: number): GameState =>
+  createGame(PARSED_LEVELS[findLevelIndex(levelId)])
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [progress, setProgress] = useState<ProgressState>(getInitialProgress)
+  const [game, setGame] = useState<GameState>(() => createGameForLevel(progress.selectedLevel))
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [levelsOpen, setLevelsOpen] = useState(false)
+  const winRecordedRef = useRef(false)
+
+  const currentLevelIndex = useMemo(() => findLevelIndex(game.level.id), [game.level.id])
+  const isLastLevel = currentLevelIndex === LEVELS.length - 1
+
+  const setLevel = useCallback((levelId: number) => {
+    if (
+      levelId > progress.highestUnlockedLevel
+      || !LEVELS.some((level) => level.id === levelId)
+    ) {
+      return
+    }
+
+    setGame(createGameForLevel(levelId))
+    setElapsedSeconds(0)
+    winRecordedRef.current = false
+    setLevelsOpen(false)
+    setProgress((currentProgress) => {
+      if (currentProgress.selectedLevel === levelId) {
+        return currentProgress
+      }
+
+      return { ...currentProgress, selectedLevel: levelId }
+    })
+  }, [progress.highestUnlockedLevel])
+
+  const handleMove = useCallback((direction: Direction) => {
+    const nextGame = movePlayer(game, direction)
+
+    setGame(nextGame)
+
+    if (!game.won && nextGame.won && !winRecordedRef.current) {
+      winRecordedRef.current = true
+      setProgress((currentProgress) =>
+        withCompletedLevel(
+          currentProgress,
+          nextGame.level.id,
+          elapsedSeconds,
+          nextGame.moves,
+          LEVELS.length,
+        ),
+      )
+    }
+  }, [elapsedSeconds, game])
+
+  const handleUndo = useCallback(() => {
+    setGame((currentGame) => undoMove(currentGame))
+  }, [])
+
+  const handleRestart = useCallback(() => {
+    setGame((currentGame) => restartGame(currentGame))
+    setElapsedSeconds(0)
+    winRecordedRef.current = false
+  }, [])
+
+  const handleNextLevel = useCallback(() => {
+    setLevel(LEVELS[Math.min(currentLevelIndex + 1, LEVELS.length - 1)].id)
+  }, [currentLevelIndex, setLevel])
+
+  const handleToggleSound = useCallback(() => {
+    setProgress((currentProgress) => ({
+      ...currentProgress,
+      soundEnabled: !currentProgress.soundEnabled,
+    }))
+  }, [])
+
+  useEffect(() => {
+    saveProgress(progress)
+  }, [progress])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const direction = KEY_TO_DIRECTION[event.key]
+
+      if (!direction) {
+        return
+      }
+
+      event.preventDefault()
+
+      if (levelsOpen) {
+        return
+      }
+
+      handleMove(direction)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleMove, levelsOpen])
+
+  useEffect(() => {
+    if (game.won) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setElapsedSeconds((seconds) => seconds + 1)
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [game.won])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <main className="relative isolate min-h-svh overflow-hidden bg-[#070a12] text-slate-100">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(7,10,18,1)_58%)]" />
+      <div className="mx-auto flex min-h-svh w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
+        <Hud
+          levelTitle={game.level.title}
+          levelId={game.level.id}
+          moves={game.moves}
+          seconds={elapsedSeconds}
+          best={progress.bestResults[game.level.id]}
+          soundEnabled={progress.soundEnabled}
+          onToggleSound={handleToggleSound}
+          onOpenLevels={() => setLevelsOpen(true)}
+        />
 
-      <div className="ticks"></div>
+        <section className="grid flex-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+          <div className="flex min-h-0 justify-center">
+            <Board game={game} />
+          </div>
+          <aside className="flex justify-center lg:justify-end">
+            <Controls
+              canUndo={game.history.length > 0}
+              onMove={handleMove}
+              onUndo={handleUndo}
+              onRestart={handleRestart}
+            />
+          </aside>
+        </section>
+      </div>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <LevelSelect
+        open={levelsOpen}
+        levels={LEVELS}
+        currentLevel={game.level.id}
+        highestUnlockedLevel={progress.highestUnlockedLevel}
+        bestResults={progress.bestResults}
+        onSelect={setLevel}
+        onClose={() => setLevelsOpen(false)}
+      />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <WinDialog
+        open={game.won && !levelsOpen}
+        levelId={game.level.id}
+        isLastLevel={isLastLevel}
+        moves={game.moves}
+        seconds={elapsedSeconds}
+        onNext={handleNextLevel}
+        onRetry={handleRestart}
+        onLevels={() => setLevelsOpen(true)}
+      />
+    </main>
   )
 }
 
