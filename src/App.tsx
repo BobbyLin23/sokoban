@@ -49,27 +49,35 @@ const playTone = (enabled: boolean, frequency: number, duration = 0.06) => {
     return
   }
 
-  const AudioContextConstructor = window.AudioContext ?? window.webkitAudioContext
+  try {
+    const AudioContextConstructor = window.AudioContext ?? window.webkitAudioContext
 
-  if (!AudioContextConstructor) {
-    return
+    if (!AudioContextConstructor) {
+      return
+    }
+
+    audioContext ??= new AudioContextConstructor()
+
+    if (audioContext.state === 'suspended' && audioContext.resume) {
+      void audioContext.resume().catch(() => undefined)
+    }
+
+    const oscillator = audioContext.createOscillator()
+    const gain = audioContext.createGain()
+    const now = audioContext.currentTime
+
+    oscillator.frequency.value = frequency
+    oscillator.type = 'sine'
+    gain.gain.setValueAtTime(0.0001, now)
+    gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01)
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
+    oscillator.connect(gain)
+    gain.connect(audioContext.destination)
+    oscillator.start(now)
+    oscillator.stop(now + duration)
+  } catch {
+    // Audio feedback is best-effort; gameplay must continue if Web Audio fails.
   }
-
-  audioContext ??= new AudioContextConstructor()
-
-  const oscillator = audioContext.createOscillator()
-  const gain = audioContext.createGain()
-  const now = audioContext.currentTime
-
-  oscillator.frequency.value = frequency
-  oscillator.type = 'sine'
-  gain.gain.setValueAtTime(0.0001, now)
-  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01)
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
-  oscillator.connect(gain)
-  gain.connect(audioContext.destination)
-  oscillator.start(now)
-  oscillator.stop(now + duration)
 }
 
 const findLevelIndex = (levelId: number) => {
