@@ -8,10 +8,10 @@ type ControlsProps = {
 }
 
 const moveButtonClass =
-  'flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/15 text-xl font-black text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.22)] transition hover:bg-cyan-400/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 disabled:opacity-40'
+  'flex h-16 w-16 touch-manipulation items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/15 text-xl font-black text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.22)] transition hover:bg-cyan-400/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200 disabled:opacity-40'
 
 const commandButtonClass =
-  'rounded-xl bg-slate-800 px-4 py-3 font-bold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-not-allowed disabled:opacity-40'
+  'touch-manipulation rounded-xl bg-slate-800 px-4 py-3 font-bold text-white transition hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 disabled:cursor-not-allowed disabled:opacity-40'
 
 export function Controls({ canUndo, onMove, onUndo, onRestart }: ControlsProps) {
   return (
@@ -57,7 +57,7 @@ export function Controls({ canUndo, onMove, onUndo, onRestart }: ControlsProps) 
           Undo
         </button>
         <button
-          className="rounded-xl bg-rose-500/20 px-4 py-3 font-bold text-rose-100 transition hover:bg-rose-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+          className="touch-manipulation rounded-xl bg-rose-500/20 px-4 py-3 font-bold text-rose-100 transition hover:bg-rose-500/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
           type="button"
           onClick={onRestart}
         >

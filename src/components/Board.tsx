@@ -20,27 +20,14 @@ const getCellLabel = ({
   crate: boolean
   player: boolean
 }) => {
-  if (player && target) {
-    return 'Player on target'
-  }
+  const tileLabel = tile === 'wall' ? 'Wall tile' : tile === 'target' ? 'Target tile' : 'Floor tile'
+  const states = [
+    target ? 'target' : undefined,
+    crate ? 'crate' : undefined,
+    player ? 'player' : undefined,
+  ].filter(Boolean)
 
-  if (player) {
-    return 'Player'
-  }
-
-  if (crate && target) {
-    return 'Crate on target'
-  }
-
-  if (crate) {
-    return 'Crate'
-  }
-
-  if (target) {
-    return 'Target'
-  }
-
-  return tile === 'wall' ? 'Wall' : 'Floor'
+  return states.length > 0 ? `${tileLabel} with ${states.join(' and ')}` : tileLabel
 }
 
 export function Board({ game }: BoardProps) {

@@ -36,6 +36,42 @@ const KEY_TO_DIRECTION: Record<string, Direction> = {
   D: 'right',
 }
 
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext
+  }
+}
+
+let audioContext: AudioContext | undefined
+
+const playTone = (enabled: boolean, frequency: number, duration = 0.06) => {
+  if (!enabled) {
+    return
+  }
+
+  const AudioContextConstructor = window.AudioContext ?? window.webkitAudioContext
+
+  if (!AudioContextConstructor) {
+    return
+  }
+
+  audioContext ??= new AudioContextConstructor()
+
+  const oscillator = audioContext.createOscillator()
+  const gain = audioContext.createGain()
+  const now = audioContext.currentTime
+
+  oscillator.frequency.value = frequency
+  oscillator.type = 'sine'
+  gain.gain.setValueAtTime(0.0001, now)
+  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.01)
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration)
+  oscillator.connect(gain)
+  gain.connect(audioContext.destination)
+  oscillator.start(now)
+  oscillator.stop(now + duration)
+}
+
 const findLevelIndex = (levelId: number) => {
   const index = LEVELS.findIndex((level) => level.id === levelId)
   return index === -1 ? 0 : index
@@ -100,6 +136,10 @@ function App() {
 
     setGame(nextGame)
 
+    if (nextGame !== game) {
+      playTone(progress.soundEnabled, nextGame.won ? 660 : 330, nextGame.won ? 0.16 : 0.06)
+    }
+
     if (!game.won && nextGame.won && !winRecordedRef.current) {
       winRecordedRef.current = true
       setProgress((currentProgress) =>
@@ -112,7 +152,7 @@ function App() {
         ),
       )
     }
-  }, [elapsedSeconds, game])
+  }, [elapsedSeconds, game, progress.soundEnabled])
 
   const handleUndo = useCallback(() => {
     setGame((currentGame) => undoMove(currentGame))
