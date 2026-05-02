@@ -1,4 +1,5 @@
 import { formatSeconds } from '../game/format'
+import { useDialogFocusTrap } from './useDialogFocusTrap'
 
 type WinDialogProps = {
   open: boolean
@@ -21,6 +22,8 @@ export function WinDialog({
   onRetry,
   onLevels,
 }: WinDialogProps) {
+  const { dialogRef, onKeyDown } = useDialogFocusTrap<HTMLElement>({ open })
+
   if (!open) {
     return null
   }
@@ -28,10 +31,13 @@ export function WinDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
       <section
+        ref={dialogRef}
         className="w-full max-w-md rounded-2xl border border-emerald-300/30 bg-slate-950 p-6 text-center shadow-[0_0_48px_rgba(52,211,153,0.25)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="win-dialog-title"
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
       >
         <p className="text-sm font-bold uppercase tracking-[0.22em] text-emerald-300">
           Level {levelId} cleared

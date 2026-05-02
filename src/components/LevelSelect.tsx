@@ -1,5 +1,6 @@
 import { formatSeconds } from '../game/format'
 import type { BestResult, LevelDefinition } from '../game/types'
+import { useDialogFocusTrap } from './useDialogFocusTrap'
 
 type LevelSelectProps = {
   open: boolean
@@ -20,6 +21,11 @@ export function LevelSelect({
   onSelect,
   onClose,
 }: LevelSelectProps) {
+  const { dialogRef, onKeyDown } = useDialogFocusTrap<HTMLElement>({
+    open,
+    onEscape: onClose,
+  })
+
   if (!open) {
     return null
   }
@@ -30,10 +36,13 @@ export function LevelSelect({
       role="presentation"
     >
       <section
+        ref={dialogRef}
         className="max-h-[86svh] w-full max-w-2xl overflow-auto rounded-2xl border border-cyan-400/20 bg-slate-950 p-5 shadow-[0_0_50px_rgba(34,211,238,0.22)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="level-select-title"
+        tabIndex={-1}
+        onKeyDown={onKeyDown}
       >
         <div className="mb-4 flex items-center justify-between gap-4">
           <h2 id="level-select-title" className="text-xl font-black text-white">
