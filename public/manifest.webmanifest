@@ -1,0 +1,17 @@
+{
+  "name": "Sokoban",
+  "short_name": "Sokoban",
+  "description": "A mobile-friendly Push Box puzzle game.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1ecc9",
+  "theme_color": "#b7d96b",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
