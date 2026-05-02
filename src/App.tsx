@@ -221,7 +221,7 @@ function App() {
   }, [game.won])
 
   return (
-    <main className="relative isolate min-h-svh overflow-hidden bg-[#070a12] text-slate-100">
+    <main className="relative isolate min-h-svh overflow-x-hidden bg-[#070a12] text-slate-100">
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(7,10,18,1)_58%)]" />
       <div className="mx-auto flex min-h-svh w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 lg:px-8">
         <Hud
